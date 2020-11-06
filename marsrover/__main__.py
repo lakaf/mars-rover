@@ -70,16 +70,18 @@ if __name__ == '__main__':
         if print_help:
             print(COMMAND_LINE_HELP)
 
-        file_path = sys.argv[-1]
-        if not os.path.isfile(file_path):
-            log.error(
-                f"File {file_path} does not exist, please check your input.")
         else:
-            with open(file_path) as input_file:
-                parse_input(input_file)
-            
-            # Outputs report
-            Rover.report_all_rovers()
+            file_path = sys.argv[-1]
+            if not os.path.isfile(file_path):
+                log.error(
+                    f"File {file_path} does not exist, "
+                    "please check your input.")
+            else:
+                with open(file_path) as input_file:
+                    parse_input(input_file)
+
+                # Outputs report
+                Rover.report_all_rovers()
 
     except Exception as ex:
         if debug_mode:
