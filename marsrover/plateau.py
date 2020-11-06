@@ -32,7 +32,7 @@ class Plateau:
 
         Raises:
             InvalidInputException: If none or more than 1 colon is found
-            InvalidInputException: If none or more than 1 space is found
+            InvalidInputException: If coordinates number is not 2
             after the string part following the colon
             InvalidInputException: If input coordinates are not integers
 
@@ -53,6 +53,12 @@ class Plateau:
             initial_x = int(coordinates[0])
             initial_y = int(coordinates[1])
         except ValueError:
-            raise InvalidInputException(f"Coordinates must be integers")
+            raise InvalidInputException("Plateau coordinates must be integers")
+
+        if initial_x < 0 or initial_y < 0:
+            raise InvalidInputException(
+                "Plateau coordinates cannot be negative "
+                "integers because lower-left coordinates "
+                "are assumed to be 0,0")
 
         return Plateau(input_parts[0], initial_x, initial_y)

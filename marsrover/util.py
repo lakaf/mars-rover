@@ -12,4 +12,7 @@ def strip_str_list(str_list: List[str]) -> List[str]:
     Returns:
         List[str]: List of stripped string elements
     """
+    if not isinstance(str_list, list):
+        raise Exception("Expects input to be a list")
+
     return [s.strip() for s in str_list]

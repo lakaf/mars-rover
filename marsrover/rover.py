@@ -27,9 +27,11 @@ class Rover:
                  current_y: int, current_orientation: Orientation):
         self._plateau = plateau
         self._name = name
-        self._current_x = current_x
-        self._current_y = current_y
         self._current_orientation = current_orientation
+
+        # Set through setters
+        self.current_x = current_x
+        self.current_y = current_y
 
     @property
     def plateau(self):
@@ -84,7 +86,7 @@ class Rover:
              - 1) % len(self.__class__.orientations)]
 
     def turn_right(self):
-        """Let rover do a right turn (clockwise)
+        """Let rover do a right turn (clockwise).
         """
         # Move 1 step right in circular list
         self._current_orientation = self.__class__.orientations[
@@ -92,17 +94,43 @@ class Rover:
              + 1) % len(self.__class__.orientations)]
 
     def move_forward(self):
-        """Modify x or y based on orientation.
+        """Modifies x or y based on orientation.
         """
         self.current_x = self.current_x + self.current_orientation.value[0]
         self.current_y = self.current_y + self.current_orientation.value[1]
 
-    def report_status(self):
-        """Report current status of a rover.
+    def report_status(self) -> str:
+        """Reports current status of a rover.
+
+        Returns:
+            str: String to represents a rover's current status
         """
-        print(
+        return (
             f"{self.name}:{self.current_x} "
             f"{self.current_y} {self.current_orientation.name}")
+
+    @classmethod
+    def register_new_rover(cls, rover_name: str, rover_obj: 'Rover'):
+        """Registers a new rover into registry.
+        It will overwrite if an existing name is
+        provided.
+
+        Args:
+            rover_name (str): Name of the new rover, will be used
+            as ID (key) in registry
+            rover_obj (Rover): New rover obj reference
+        """
+        cls.rover_registry[rover_name] = rover_obj
+
+    @classmethod
+    def get_rover_by_name(cls, rover_name: str) -> 'Rover':
+        """Fetches a rover from registry by its name
+
+        Returns:
+            Rover: Rover object with provided name,
+            None if the provided name cannot be found
+        """
+        return cls.rover_registry.get(rover_name)
 
     @classmethod
     def parse_rover_input(cls, input_line: str, plateau: Plateau):
@@ -112,6 +140,7 @@ class Rover:
 
         Args:
             input_line (str): Input line from user
+            valid sample: "Rover1 Landing:1 2 N"
             plateau (Plateau): Plateau obj where rover
             has landed on
 
@@ -142,12 +171,14 @@ class Rover:
     def parse_landing(cls, rover_name: str, landing_input: str,
                       plateau: Plateau):
         """Parses rover landing inputs.
+        Will add newly landed rover to rover registry.
 
         Args:
             rover_name (str): Name of the newly landing rover,
             will be used as a rover's id in registry
             landing_input (str): Input to indicate initial X and Y
             coordinates and orientation of a newly landing rover
+            valid sample: "1 2 N"
             plateau (Plateau): The plateau object which will
             limit the rover's moving borders
 
@@ -160,10 +191,12 @@ class Rover:
         if len(landing_input_parts) != 3:
             raise InvalidInputException("Invalid rover landing input")
 
-        if (not landing_input_parts[0].isnumeric()
-                or not landing_input_parts[1].isnumeric()):
+        try:
+            landing_x = int(landing_input_parts[0])
+            landing_y = int(landing_input_parts[1])
+        except ValueError:
             raise InvalidInputException(
-                "Invalid rover landing coordinates input")
+                f"Invalid rover landing coordinates input: {landing_input}")
 
         try:
             orientation = Orientation[landing_input_parts[2].upper()]
@@ -171,9 +204,10 @@ class Rover:
             raise InvalidInputException(
                 f"Invalid rover orientation input: {landing_input_parts[2]}")
 
-        cls.rover_registry[rover_name] = Rover(
-            plateau, rover_name, int(landing_input_parts[0]),
-            int(landing_input_parts[1]), orientation)
+        # Add newly landed rover to registry
+        cls.register_new_rover(rover_name, Rover(
+            plateau, rover_name, landing_x,
+            landing_y, orientation))
 
     @classmethod
     def parse_instructions(cls, rover_name: str, instructions_input: str):
@@ -183,24 +217,27 @@ class Rover:
             rover_name (str): Rover name(also id) to instruct
             instructions_input (str): List of characters instructions
             for specific rover
+            valid sample: "Rover2 Instructions:MMRMMRMRRM"
 
         Raises:
             InvalidInputException: If rover_name does not exist in registry
             InvalidInputException: If an unknown command is passed in
         """
-        if rover_name not in cls.rover_registry:
-            raise InvalidInputException(f"{rover_name} does not exist")
+        acting_rover = cls.get_rover_by_name(rover_name)
+        if not acting_rover:
+            raise InvalidInputException(f"Rover {rover_name} does not exist")
 
-        acting_rover = cls.rover_registry[rover_name]
         for command in instructions_input:
             if command not in cls.commands_registry:
                 raise InvalidInputException(
                     f"Unknown rover instruction: {command}")
+
+            # Executes command
             getattr(acting_rover, cls.commands_registry[command])()
 
     @classmethod
     def report_all_rovers(cls):
-        """Report status of all registered rovers.
+        """Reports status of all registered rovers.
         """
         for rover in cls.rover_registry.values():
-            rover.report_status()
+            print(rover.report_status())
