@@ -135,13 +135,13 @@ def test_report_status(rover_at_middle, rover_at_edge):
 
 
 def test_parse_rover_input_base(square_plataeu):
-    good_input_landing = "Rover1 Landing:1 2 N"
+    good_input_landing = "RoverBase Landing:1 2 N"
     Rover.parse_rover_input(good_input_landing, square_plataeu)
-    assert Rover.get_rover_by_name("Rover1")
+    assert Rover.get_rover_by_name("RoverBase")
 
-    good_input_instructions = "Rover1 Instructions:LMLMLMLMM"
+    good_input_instructions = "RoverBase Instructions:LMLMLMLMM"
     Rover.parse_rover_input(good_input_instructions, square_plataeu)
-    assert Rover.get_rover_by_name("Rover1").current_y == 3
+    assert Rover.get_rover_by_name("RoverBase").current_y == 3
 
 
 def test_parse_rover_input_invalid(square_plataeu):
@@ -164,7 +164,7 @@ def test_parse_rover_input_invalid(square_plataeu):
 
 
 def test_parse_landing_base(square_plataeu):
-    rover_name = "Rover5"
+    rover_name = "RoverLandingBase"
     landing_input = "1 2 W"
     Rover.parse_landing(rover_name, landing_input, square_plataeu)
 
@@ -175,6 +175,17 @@ def test_parse_landing_base(square_plataeu):
     assert new_rover.current_y == 2
     assert new_rover.current_orientation == Orientation.W
     assert new_rover.plateau == square_plataeu
+
+
+def test_parse_landing_twice(square_plataeu):
+    rover_name = "RoverTwice"
+    landing_input = "1 2 W"
+    expected_msg = "Rover {} has already landed before"
+    Rover.parse_landing(rover_name, landing_input, square_plataeu)
+
+    with pytest.raises(InvalidInputException) as ex:
+        Rover.parse_landing(rover_name, landing_input, square_plataeu)
+    assert ex.value.message == expected_msg.format(rover_name)
 
 
 def test_parse_landing_invalid_input(square_plataeu):

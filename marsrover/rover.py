@@ -191,6 +191,10 @@ class Rover:
         if len(landing_input_parts) != 3:
             raise InvalidInputException("Invalid rover landing input")
 
+        if cls.get_rover_by_name(rover_name):
+            raise InvalidInputException(
+                f"Rover {rover_name} has already landed before")
+
         try:
             landing_x = int(landing_input_parts[0])
             landing_y = int(landing_input_parts[1])
