@@ -10,6 +10,7 @@ Mars Rover parse is a command line program that parses text inputs containing pl
 1. [System Requirements](#system-requirements)
 1. [Usage](#usage)
 1. [Input Format](#input-format)
+1. [Output Example](#output-example)
 
 ---
 
@@ -72,3 +73,10 @@ Input file has to be provided in proper format:
     ```
 
 You can get a simple sample input from the included `sample_input.txt` file.
+
+## Output Example
+```
+./app sample_input.txt 
+Rover1:1 3 N
+Rover2:5 1 E
+```
