@@ -29,10 +29,11 @@ def parse_command_line_argv(argv_list: List[str]):
         is only asking for command line help
     """
     if len(argv_list) < 2 or len(argv_list) > 3:
-        raise Exception("Invalid argument(s)")
-
-    debug_mode = "--debug" in argv_list
-    print_help = "--help" in argv_list
+        print_help = True
+        debug_mode = False
+    else:
+        debug_mode = "--debug" in argv_list
+        print_help = "--help" in argv_list
 
     return debug_mode, print_help
 
