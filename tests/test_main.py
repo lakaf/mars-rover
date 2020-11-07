@@ -30,14 +30,11 @@ def test_input_file_io_invalid_input():
 
 
 def test_parse_command_line_argv():
-    with pytest.raises(Exception) as ex:
-        marsrover.__main__.parse_command_line_argv([])
-
-    with pytest.raises(Exception) as ex:
-        marsrover.__main__.parse_command_line_argv(['a'])
-
-    with pytest.raises(Exception) as ex:
-        marsrover.__main__.parse_command_line_argv(['a', 'b', 'c', 'd'])
+    assert (False, True) == marsrover.__main__.parse_command_line_argv([])
+    assert (False, True) == marsrover.__main__.parse_command_line_argv(['a'])
+    assert(
+        False, True) == marsrover.__main__.parse_command_line_argv(
+        ['a', 'b', 'c', 'd'])
 
     assert(
         False, False) == marsrover.__main__.parse_command_line_argv(
