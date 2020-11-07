@@ -11,6 +11,7 @@ Mars Rover parse is a command line program that parses text inputs containing pl
 1. [Usage](#usage)
 1. [Input Format](#input-format)
 1. [Output Example](#output-example)
+1. [Unit Testing](#unit-testing)
 
 ---
 
@@ -92,7 +93,7 @@ Rover1:1 3 N
 Rover2:5 1 E
 ```
 
-## Unit testing
+## Unit Testing
 
 A shell script wrapper has been provided to run the unit tests as well (please make sure your default python3 runtime has pytest 6.1.1 or later installed):
 
