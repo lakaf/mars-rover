@@ -17,10 +17,16 @@ Mars Rover parse is a command line program that parses text inputs containing pl
 ## Quick Start
 
 ```
-./app sample_input.txt
-```
+# Pass input through file
+python3 -m marsrover sample_input.txt
 
-Please make sure execute permission has been granted to file **app**
+# Pass input through inline command line
+python3 -m marsrover "Plateau:5 5
+Rover1 Landing:1 2 N
+Rover1 Instructions:LMLMLMLMM
+Rover2 Landing:3 3 E
+Rover2 Instructions:MMRMMRMRRM"
+```
 
 ---
 
@@ -34,19 +40,23 @@ Please make sure execute permission has been granted to file **app**
 ## Usage
 
 ```
-./app <input_file_path>
+python3 -m marsrover <input_file_path>
+# OR
+python3 -m marsrover <inline_text_input>
 ```
 
 Running under debug mode, which will show more detailed exception message:
 
 ```
-./app --debug <input_file_path>
+python3 -m marsrover --debug <input_file_path>
+# OR
+python3 -m marsrover --debug <inline_text_input>
 ```
 
 See command line help:
 
 ```
-./app --help
+python3 -m marsrover --help
 ```
 
 ---
@@ -77,7 +87,15 @@ You can get a simple sample input from the included `sample_input.txt` file.
 ## Output Example
 
 ```
-./app sample_input.txt
+python3 -m marsrover sample_input.txt sample_input.txt
 Rover1:1 3 N
 Rover2:5 1 E
+```
+
+## Unit testing
+
+A shell script wrapper has been provided to run the unit tests as well (please make sure your default python3 runtime has pytest 6.1.1 or later installed):
+
+```
+./unit-test
 ```

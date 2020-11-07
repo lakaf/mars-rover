@@ -1,3 +1,4 @@
+import io
 import json
 import logging.config
 import os
@@ -72,17 +73,17 @@ if __name__ == '__main__':
             print(COMMAND_LINE_HELP)
 
         else:
-            file_path = sys.argv[-1]
-            if not os.path.isfile(file_path):
-                log.error(
-                    f"File {file_path} does not exist, "
-                    "please check your input.")
-            else:
-                with open(file_path) as input_file:
+            input_argv = sys.argv[-1]
+            if os.path.isfile(input_argv):
+                with open(input_argv) as input_file:
                     parse_input(input_file)
 
-                # Outputs report
-                Rover.report_all_rovers()
+            else:
+                with io.StringIO(input_argv) as input_io:
+                    parse_input(input_io)
+
+            # Outputs report
+            Rover.report_all_rovers()
 
     except Exception as ex:
         if debug_mode:
