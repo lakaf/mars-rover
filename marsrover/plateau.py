@@ -35,6 +35,7 @@ class Plateau:
             InvalidInputException: If coordinates number is not 2
             after the string part following the colon
             InvalidInputException: If input coordinates are not integers
+            InvalidInputException: If input coordinates are negative
 
         Returns:
             Plateau: Plateau object based on user input
