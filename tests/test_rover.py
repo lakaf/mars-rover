@@ -2,8 +2,14 @@ import pytest
 from marsrover.enums import Orientation
 from marsrover.exceptions import (InvalidInputException,
                                   InvalidRoverOperationException)
-from marsrover.plateau import Plateau
-from marsrover.rover import Rover
+from marsrover.models import Plateau, Rover
+from marsrover.parsers import RoverLandingTextParser, RoverMovingTextParser
+from marsrover.database import RoverMemoryRepo
+
+
+@pytest.fixture()
+def rover_repo():
+    return RoverMemoryRepo()
 
 
 @pytest.fixture()
@@ -23,6 +29,25 @@ def rover_at_middle(square_plataeu):
         "Rover Middle",
         3, 3, Orientation.N
     )
+
+
+@pytest.fixture()
+def rover_at_next_to_middle(square_plataeu):
+    return Rover(
+        square_plataeu,
+        "Rover Next to Middle",
+        3, 2, Orientation.N
+    )
+
+
+@pytest.fixture()
+def rover_landing_parser(square_plataeu, rover_repo):
+    return RoverLandingTextParser(square_plataeu, rover_repo)
+
+
+@pytest.fixture()
+def rover_moving_parser(square_plataeu, rover_repo):
+    return RoverMovingTextParser(square_plataeu, rover_repo)
 
 
 @pytest.fixture()
@@ -134,41 +159,36 @@ def test_report_status(rover_at_middle, rover_at_edge):
                                rover_at_edge.current_orientation.name))
 
 
-def test_parse_rover_input_base(square_plataeu):
+def test_parse_rover_input_base(
+        rover_landing_parser, rover_moving_parser, rover_repo):
     good_input_landing = "RoverBase Landing:1 2 N"
-    Rover.parse_rover_input(good_input_landing, square_plataeu)
-    assert Rover.get_rover_by_name("RoverBase")
+    rover_landing_parser.parse_input_line(good_input_landing)
+    assert rover_repo.get_rover_by_name("RoverBase")
 
     good_input_instructions = "RoverBase Instructions:LMLMLMLMM"
-    Rover.parse_rover_input(good_input_instructions, square_plataeu)
-    assert Rover.get_rover_by_name("RoverBase").current_y == 3
+    rover_moving_parser.parse_input_line(good_input_instructions)
+    assert rover_repo.get_rover_by_name("RoverBase").current_y == 3
 
 
-def test_parse_rover_input_invalid(square_plataeu):
+def test_parse_rover_input_invalid(rover_landing_parser):
     expected_msg = "Invalid Rover input"
     no_colon = "Rover1 Landing 1 2 N"
     with pytest.raises(InvalidInputException) as ex:
-        Rover.parse_rover_input(no_colon, square_plataeu)
+        rover_landing_parser.parse_input_line(no_colon)
     assert ex.value.message == expected_msg
 
     too_many_colons = "Rover1:Landing:1 2 N"
     with pytest.raises(InvalidInputException) as ex:
-        Rover.parse_rover_input(too_many_colons, square_plataeu)
+        rover_landing_parser.parse_input_line(too_many_colons)
     assert ex.value.message == expected_msg
 
-    expected_msg = "Unknown rover input type: {}"
-    unknown_command = "Rover1 Restart:1 2 N"
-    with pytest.raises(InvalidInputException) as ex:
-        Rover.parse_rover_input(unknown_command, square_plataeu)
-    assert ex.value.message == expected_msg.format("Restart")
 
-
-def test_parse_landing_base(square_plataeu):
+def test_parse_landing_base(rover_landing_parser, rover_repo, square_plataeu):
     rover_name = "RoverLandingBase"
-    landing_input = "1 2 W"
-    Rover.parse_landing(rover_name, landing_input, square_plataeu)
+    landing_input = "RoverLandingBase Landing:1 2 W"
+    rover_landing_parser.parse_input_line(landing_input)
 
-    new_rover = Rover.get_rover_by_name(rover_name)
+    new_rover = rover_repo.get_rover_by_name(rover_name)
     assert new_rover
     assert new_rover.name == rover_name
     assert new_rover.current_x == 1
@@ -177,109 +197,106 @@ def test_parse_landing_base(square_plataeu):
     assert new_rover.plateau == square_plataeu
 
 
-def test_parse_landing_twice(square_plataeu):
+def test_parse_landing_twice(rover_landing_parser):
     rover_name = "RoverTwice"
-    landing_input = "1 2 W"
+    landing_input = "RoverTwice Landing:1 2 W"
     expected_msg = "Rover {} has already landed before"
-    Rover.parse_landing(rover_name, landing_input, square_plataeu)
+    rover_landing_parser.parse_input_line(landing_input)
 
     with pytest.raises(InvalidInputException) as ex:
-        Rover.parse_landing(rover_name, landing_input, square_plataeu)
+        rover_landing_parser.parse_input_line(landing_input)
     assert ex.value.message == expected_msg.format(rover_name)
 
 
-def test_parse_landing_invalid_input(square_plataeu):
+def test_parse_landing_invalid_input(rover_landing_parser):
     expected_msg = "Invalid rover landing input"
 
-    no_space_input = "12N"
+    no_space_input = "Rover1 Landing:12N"
     with pytest.raises(InvalidInputException) as ex:
-        Rover.parse_landing("name", no_space_input, square_plataeu)
+        rover_landing_parser.parse_input_line(no_space_input)
     assert ex.value.message == expected_msg
 
-    too_many_spaces = "1 2   N 4"
+    too_many_spaces = "Rover1 Landing:1 2   N 4"
     with pytest.raises(InvalidInputException) as ex:
-        Rover.parse_landing("name", too_many_spaces, square_plataeu)
-    assert ex.value.message == expected_msg
-
-    empty_input = ""
-    with pytest.raises(InvalidInputException) as ex:
-        Rover.parse_landing("name", empty_input, square_plataeu)
+        rover_landing_parser.parse_input_line(too_many_spaces)
     assert ex.value.message == expected_msg
 
 
-def test_parse_landing_invalid_coor(square_plataeu):
+def test_parse_landing_invalid_coor(rover_landing_parser):
     expected_msg = "Invalid rover landing coordinates input: {}"
 
-    non_numerics = "A 2 N"
+    non_numerics = "Rover1 Landing:A 2 N"
     with pytest.raises(InvalidInputException) as ex:
-        Rover.parse_landing("name", non_numerics, square_plataeu)
-    assert ex.value.message == expected_msg.format(non_numerics)
+        rover_landing_parser.parse_input_line(non_numerics)
+    assert ex.value.message == expected_msg.format("A 2 N")
 
-    floats_coors = "3 2.9 N"
+    floats_coors = "Rover1 Landing:3 2.9 N"
     with pytest.raises(InvalidInputException) as ex:
-        Rover.parse_landing("name", floats_coors, square_plataeu)
-    assert ex.value.message == expected_msg.format(floats_coors)
+        rover_landing_parser.parse_input_line(floats_coors)
+    assert ex.value.message == expected_msg.format("3 2.9 N")
 
 
-def test_parse_landing_unknown_orientation(square_plataeu):
+def test_parse_landing_unknown_orientation(rover_landing_parser):
     expected_msg = "Invalid rover orientation input: {}"
 
-    wrong_orientation = "2 2 A"
+    wrong_orientation = "Rover1 Landing:2 2 A"
     with pytest.raises(InvalidInputException) as ex:
-        Rover.parse_landing("name", wrong_orientation, square_plataeu)
+        rover_landing_parser.parse_input_line(wrong_orientation)
     assert ex.value.message == expected_msg.format('A')
 
 
-def test_parse_landing_out_of_border(square_plataeu):
-    out_of_border = "100 1 E"
-    with pytest.raises(InvalidRoverOperationException) as ex:
-        Rover.parse_landing("name", out_of_border, square_plataeu)
-    assert ex.value.message == "Crossing right border"
+def test_parse_landing_out_of_border(rover_landing_parser):
+    out_of_border = "Rover1 Landing:100 1 E"
+    with pytest.raises(InvalidInputException) as ex:
+        rover_landing_parser.parse_input_line(out_of_border)
+    assert ex.value.message == "Invalid landing location: (100, 1)"
 
-    negative_landing = "-1 1 N"
-    with pytest.raises(InvalidRoverOperationException) as ex:
-        Rover.parse_landing("name", negative_landing, square_plataeu)
-    assert ex.value.message == "Crossing left border"
-
-
-def test_parse_instructions_base(rover_at_middle, rover_registry):
-    Rover.rover_registry = rover_registry
-
-    good_input = "LMLMLMLMRMRMRMRMMLM"
-    Rover.parse_instructions(rover_at_middle.name, good_input)
-
-    turn_only = "LLLLRRRRLRLRLRRRLRLRLR"
-    Rover.parse_instructions(rover_at_middle.name, turn_only)
-
-    empty_input = ""
-    Rover.parse_instructions(rover_at_middle.name, empty_input)
+    negative_landing = "Rover1 Landing:-1 1 N"
+    with pytest.raises(InvalidInputException) as ex:
+        rover_landing_parser.parse_input_line(negative_landing)
+    assert ex.value.message == "Invalid landing location: (-1, 1)"
 
 
-def test_parse_instructions_unkonwn_rover(rover_registry):
+def test_parse_instructions_base(rover_moving_parser, rover_landing_parser):
+    rover_landing_parser.parse_input_line("RoverBase Landing: 3 3 N")
+
+    good_input = "RoverBase Instructions:LMLMLMLMRMRMRMRMMLM"
+    rover_moving_parser.parse_input_line(good_input)
+
+    turn_only = "RoverBase Instructions:LLLLRRRRLRLRLRRRLRLRLR"
+    rover_moving_parser.parse_input_line(turn_only)
+
+    empty_input = "RoverBase Instructions:"
+    rover_moving_parser.parse_input_line(empty_input)
+
+
+def test_parse_instructions_unkonwn_rover(rover_moving_parser):
     expected_msg = "Rover {} does not exist"
-    Rover.rover_registry = rover_registry
 
-    non_existing_name = "Rover874"
+    non_existing_name = "Rover874 Instructions:L"
     with pytest.raises(InvalidInputException) as ex:
-        Rover.parse_instructions(non_existing_name, "")
-    assert ex.value.message == expected_msg.format(non_existing_name)
-
-    empty_name = ""
-    with pytest.raises(InvalidInputException) as ex:
-        Rover.parse_instructions(non_existing_name, "")
-    assert ex.value.message == expected_msg.format(non_existing_name)
+        rover_moving_parser.parse_input_line(non_existing_name)
+    assert ex.value.message == expected_msg.format("Rover874")
 
 
-def test_parse_instructions_unknown_command(rover_registry, rover_at_middle):
+def test_parse_instructions_unknown_command(rover_moving_parser, rover_landing_parser):
+    rover_landing_parser.parse_input_line("RoverBase Landing: 3 3 N")
     expected_msg = "Unknown rover instruction: {}"
     Rover.rover_registry = rover_registry
 
-    unknown_command = "LMRCLLRRLR"
+    unknown_command = "RoverBase Instructions:LMRCLLRRLR"
     with pytest.raises(InvalidInputException) as ex:
-        Rover.parse_instructions(rover_at_middle.name, unknown_command)
+        rover_moving_parser.parse_input_line(unknown_command)
     assert ex.value.message == expected_msg.format('C')
 
 
-def test_report_all(rover_registry):
-    Rover.rover_registry = rover_registry
-    Rover.report_all_rovers()
+def test_report_all(rover_repo, rover_landing_parser):
+    rover_repo.report_all_rovers()
+    rover_landing_parser.parse_input_line("RoverBase Landing: 3 3 N")
+    rover_repo.report_all_rovers()
+
+
+def test_rover_collision(rover_at_middle, rover_at_next_to_middle):
+    rover_at_middle.plateau.update_occupied_location(rover_at_middle)
+    with pytest.raises(InvalidRoverOperationException) as ex:
+        rover_at_next_to_middle.move_forward()

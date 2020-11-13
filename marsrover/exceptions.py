@@ -25,7 +25,7 @@ class InvalidRoverOperationException(Exception):
     """
     error_template = "Invalid operation detected for rover {}: \n{}"
 
-    def __init__(self, message, rover_name):
+    def __init__(self, message, rover_name=None):
         super().__init__(message)
         self.message = message
         self.rover_name = rover_name
