@@ -6,10 +6,12 @@ import sys
 from typing import List, TextIO
 
 from .constants import COMMAND_LINE_HELP
+from .database import RoverMemoryRepo, RoverRepo
+from .enums import RoverInputType
 from .exceptions import InvalidInputException
 from .logging import logging_config
-from .plateau import Plateau
-from .rover import Rover
+from .parsers import (PlateauInputTextParser, RoverLandingTextParser,
+                      RoverMovingTextParser)
 
 logging.config.dictConfig(logging_config)
 log = logging.getLogger("marsrover")
@@ -39,7 +41,7 @@ def parse_command_line_argv(argv_list: List[str]):
     return debug_mode, print_help
 
 
-def parse_input(input_file: TextIO):
+def parse_input(input_file: TextIO, rover_repo: RoverRepo):
     """Main parser for input file.
     It will parse user's input line
     by line.
@@ -52,12 +54,26 @@ def parse_input(input_file: TextIO):
 
     try:
         # Parse configuration
-        plateau = Plateau.parse_plateau_input(first_line)
+        plateau = PlateauInputTextParser().parse_input_line(first_line)
+
+        # Parsers for rover input
+        # Try to reuse same parser instance instead of creating a new one
+        # per input line to save memory usage
+        rover_landing_parser = RoverLandingTextParser(plateau, rover_repo)
+        rover_moving_parser = RoverMovingTextParser(plateau, rover_repo)
 
         # Parse rover input
         for line in input_file:
             current_line += 1
-            Rover.parse_rover_input(line, plateau)
+
+            if RoverInputType.LANDING.value in line.upper():
+                rover_landing_parser.parse_input_line(line)
+            elif RoverInputType.INSTRUCTIONS.value in line.upper():
+                rover_moving_parser.parse_input_line(line)
+
+            else:
+                raise InvalidInputException(
+                    f"Unknown rover input type: {line}")
 
     except InvalidInputException as invalid_input_ex:
         raise InvalidInputException(
@@ -69,6 +85,9 @@ if __name__ == '__main__':
     try:
         debug_mode, print_help = parse_command_line_argv(sys.argv)
 
+        # Using memory repo in this case
+        rover_repo = RoverMemoryRepo()
+
         if print_help:
             print(COMMAND_LINE_HELP)
 
@@ -76,14 +95,14 @@ if __name__ == '__main__':
             input_argv = sys.argv[-1]
             if os.path.isfile(input_argv):
                 with open(input_argv) as input_file:
-                    parse_input(input_file)
+                    parse_input(input_file, rover_repo)
 
             else:
                 with io.StringIO(input_argv) as input_io:
-                    parse_input(input_io)
+                    parse_input(input_io, rover_repo)
 
             # Outputs report
-            Rover.report_all_rovers()
+            rover_repo.report_all_rovers()
 
     except Exception as ex:
         if debug_mode:
